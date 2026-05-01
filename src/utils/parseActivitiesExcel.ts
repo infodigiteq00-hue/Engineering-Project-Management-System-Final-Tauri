@@ -1,0 +1,249 @@
+/**
+ * Parse activities Excel: first row = commencement date, then Sr. No., Activity Name, Activity Type, Target Date.
+ * Activity type:
+ * - "process update" / "regular update" / "minor" -> regular_update
+ * - "milestone" / "important milestone" / "major milestone" / "major" -> milestone
+ * Target column: if it's a date (dd-mm-yyyy or Excel serial), use it as target_date; otherwise treat as relative ("1st week") and compute from commencement_date.
+ * Dates are parsed as dd-mm-yyyy and stored as yyyy-mm-dd (ISO) without timezone shift. Uploaded target dates are kept as-is (no auto-generation from commencement).
+ */
+
+export interface ParsedActivityRow {
+  sr_no: number;
+  activity_name: string;
+  activity_type: 'regular_update' | 'milestone';
+  target_relative: string;
+  target_date: string | null; // YYYY-MM-DD
+  sort_order: number;
+  /** True when step involves Inspection or Third Party Inspection (from "Inspection/TPI involved?" column: Yes/No). */
+  inspection_tpi_involved: boolean;
+  /** Optional 0–100: fixed % this step contributes to progress when completed. Null = manual % at mark-complete. */
+  progress_weight: number | null;
+}
+
+export interface ParsedActivitiesResult {
+  commencement_date: string | null; // YYYY-MM-DD
+  activities: ParsedActivityRow[];
+  error?: string;
+}
+
+function parseTargetRelativeToDays(text: string): number | null {
+  if (!text || typeof text !== 'string') return null;
+  const t = text.trim().toLowerCase();
+  // "1st day" = 0, "2nd day" = 1, "3rd day" = 2
+  const dayMatch = t.match(/^(\d+)(?:st|nd|rd|th)?\s*days?$/);
+  if (dayMatch) return Math.max(0, parseInt(dayMatch[1], 10) - 1);
+  // "1st week" = 7, "2nd week" = 14, "3rd week" = 21
+  const weekMatch = t.match(/^(\d+)(?:st|nd|rd|th)?\s*weeks?$/);
+  if (weekMatch) return Math.max(0, parseInt(weekMatch[1], 10)) * 7;
+  // "1st month" = 30, "2nd month" = 60
+  const monthMatch = t.match(/^(\d+)(?:st|nd|rd|th)?\s*months?$/);
+  if (monthMatch) return Math.max(0, parseInt(monthMatch[1], 10)) * 30;
+  // Plain number = days
+  const num = parseInt(t, 10);
+  if (!isNaN(num) && num >= 0) return num;
+  return null;
+}
+
+function addDays(isoDate: string, days: number): string {
+  const [y, m, day] = isoDate.split('-').map(Number);
+  const d = new Date(y, m - 1, day);
+  d.setDate(d.getDate() + days);
+  return toISODateLocal(d);
+}
+
+function isoToDDMMYYYY(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-');
+  if (!y || !m || !d) return isoDate;
+  return `${d}-${m}-${y}`;
+}
+
+/** Format a Date as yyyy-mm-dd using local date parts (no timezone shift). */
+function toISODateLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Parse a cell value as date. Excel uses dd-mm-yyyy or may return Excel serial (days since 1900-01-01).
+ * Returns yyyy-mm-dd (ISO) using local date to prevent timezone shift.
+ */
+function parseDateCell(val: unknown): string | null {
+  if (val == null) return null;
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    // dd-mm-yyyy, dd/mm/yyyy or dd mm yyyy (strict: day-month-year)
+    const ddmmyyyy = trimmed.match(/^(\d{1,2})[\s/-](\d{1,2})[\s/-](\d{4})$/);
+    if (ddmmyyyy) {
+      const day = parseInt(ddmmyyyy[1], 10);
+      const month = parseInt(ddmmyyyy[2], 10) - 1;
+      const year = parseInt(ddmmyyyy[3], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime()) && d.getDate() === day && d.getMonth() === month) return toISODateLocal(d);
+    }
+    // Excel serial sometimes comes as a numeric-looking string (e.g. "46138").
+    if (/^\d+(?:\.\d+)?$/.test(trimmed)) {
+      const serial = Number(trimmed);
+      if (!isNaN(serial) && serial >= 1 && serial <= 2958465) {
+        // Excel 1900 date system base: 1899-12-30 (accounts for Excel's leap-year bug).
+        const excelEpoch = new Date(1899, 11, 30);
+        const d = new Date(excelEpoch.getTime());
+        d.setDate(d.getDate() + Math.floor(serial));
+        if (!isNaN(d.getTime())) return toISODateLocal(d);
+      }
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) return toISODateLocal(parsed);
+  }
+  // Excel serial in 1900 date system.
+  if (typeof val === 'number' && !isNaN(val) && val >= 1 && val <= 2958465) {
+    // Excel 1900 date system base: 1899-12-30 (accounts for Excel's leap-year bug).
+    const excelEpoch = new Date(1899, 11, 30);
+    const d = new Date(excelEpoch.getTime());
+    d.setDate(d.getDate() + Math.floor(val));
+    if (!isNaN(d.getTime())) return toISODateLocal(d);
+  }
+  if (val instanceof Date && !isNaN(val.getTime())) return toISODateLocal(val);
+  return null;
+}
+
+function normalizeActivityType(val: unknown): 'regular_update' | 'milestone' {
+  if (val == null) return 'regular_update';
+  const s = String(val).trim().toLowerCase();
+  // Treat "major" as milestone (same bucket as "milestone" / "important milestone" / "major milestone")
+  if (
+    s.includes('milestone') ||
+    s === 'important milestone' ||
+    s === 'major milestone' ||
+    s === 'major'
+  ) {
+    return 'milestone';
+  }
+  // Treat "minor" / "process update" / "regular update" as regular_update
+  if (
+    s === 'minor' ||
+    s.includes('process update') ||
+    s.includes('regular update')
+  ) {
+    return 'regular_update';
+  }
+  return 'regular_update';
+}
+
+export function parseActivitiesExcel(rows: unknown[][]): ParsedActivitiesResult {
+  const result: ParsedActivitiesResult = { commencement_date: null, activities: [] };
+  if (!Array.isArray(rows) || rows.length === 0) return result;
+
+  let commencement_date: string | null = null;
+  let dataStartRow = 0;
+
+  // First row: optional "Commencement Date" label + date, or just date
+  const row0 = rows[0];
+  if (Array.isArray(row0)) {
+    const firstCell = row0[0];
+    const dateFromFirst = parseDateCell(firstCell);
+    if (dateFromFirst) {
+      commencement_date = dateFromFirst;
+      dataStartRow = 1;
+    } else if (firstCell != null && String(firstCell).toLowerCase().replace(/\s/g, '').includes('commencement')) {
+      commencement_date = parseDateCell(row0[1]) || null;
+      dataStartRow = 2;
+    } else {
+      dataStartRow = 0;
+    }
+  }
+
+  // Find header row (contains "sr" or "activity" or "activity name")
+  // Search from row 0 so we don't miss the header when it's on row 1 (commencement on row 0, headers on row 1, data from row 2)
+  let headerRowIndex = dataStartRow;
+  let colSr = 0, colName = 1, colType = 2, colTarget = 3, colInspectionTpi = -1, colProgressWeight = -1;
+  for (let r = 0; r < Math.min(dataStartRow + 3, rows.length); r++) {
+    const row = rows[r];
+    if (!Array.isArray(row)) continue;
+    const headerLower = row.map((c: unknown) => String(c ?? '').toLowerCase());
+    const hasSr = headerLower.some((h: string) => h.includes('sr') || h === 'sr no' || h === 'sr no.');
+    const hasName = headerLower.some((h: string) => h.includes('activity') && h.includes('name'));
+    const hasType = headerLower.some((h: string) => h.includes('type') || h.includes('activity type'));
+    const hasTarget = headerLower.some((h: string) => h.includes('target'));
+    if (hasName || hasSr) {
+      headerRowIndex = r;
+      colSr = headerLower.findIndex((h: string) => h.includes('sr') || h === 'sr no' || h === 'sr no.');
+      if (colSr < 0) colSr = 0;
+      colName = headerLower.findIndex((h: string) => (h.includes('activity') && h.includes('name')) || h === 'activity');
+      if (colName < 0) colName = 1;
+      colType = headerLower.findIndex((h: string) => h.includes('type'));
+      if (colType < 0) colType = 2;
+      colTarget = headerLower.findIndex((h: string) => h.includes('target'));
+      if (colTarget < 0) colTarget = 3;
+      colInspectionTpi = headerLower.findIndex((h: string) =>
+        (h.includes('inspection') && h.includes('tpi')) ||
+        (h.includes('inspection') && h.includes('involved')) ||
+        h.includes('inspection/tpi') ||
+        (h.includes('third') && h.includes('party'))
+      );
+      colProgressWeight = headerLower.findIndex((h: string) =>
+        (h.includes('weight') && (h.includes('progress') || h.includes('%'))) ||
+        h.includes('progress weight') ||
+        h.includes('contribution') ||
+        h === 'weight %' || h === 'weight%'
+      );
+      break;
+    }
+  }
+
+  const dataStart = headerRowIndex + 1;
+  const activities: ParsedActivityRow[] = [];
+
+  for (let i = dataStart; i < rows.length; i++) {
+    const row = rows[i];
+    if (!Array.isArray(row)) continue;
+    const srRaw = row[colSr];
+    const nameRaw = row[colName];
+    const typeRaw = row[colType];
+    const targetRaw = row[colTarget];
+    const name = nameRaw != null ? String(nameRaw).trim() : '';
+    if (!name) continue; // skip empty rows
+    const sr_no = typeof srRaw === 'number' && !isNaN(srRaw) ? Math.max(1, Math.floor(srRaw)) : i - dataStart + 1;
+    const activity_type = normalizeActivityType(typeRaw);
+    const rawTargetRelative = targetRaw != null ? String(targetRaw).trim() : '';
+    // Prefer target column as explicit date (dd-mm-yyyy or Excel serial). Use as final target_date; do not recalculate from commencement.
+    const parsedTargetDate = parseDateCell(targetRaw);
+    const target_relative = parsedTargetDate !== null
+      ? (typeof targetRaw === 'number' ? isoToDDMMYYYY(parsedTargetDate) : (rawTargetRelative || parsedTargetDate))
+      : rawTargetRelative;
+    const target_date = parsedTargetDate !== null
+      ? parsedTargetDate
+      : (commencement_date && target_relative ? (() => {
+          const days = parseTargetRelativeToDays(target_relative);
+          return commencement_date && days !== null ? addDays(commencement_date, days) : null;
+        })() : null);
+    const inspectionTpiRaw = colInspectionTpi >= 0 ? row[colInspectionTpi] : null;
+    const inspection_tpi_involved = (() => {
+      if (inspectionTpiRaw == null) return false;
+      const s = String(inspectionTpiRaw).trim().toLowerCase();
+      return s === 'yes' || s === 'y' || s === '1' || s === 'true';
+    })();
+    const weightRaw = colProgressWeight >= 0 ? row[colProgressWeight] : null;
+    let progress_weight: number | null = null;
+    if (weightRaw != null && weightRaw !== '') {
+      const n = typeof weightRaw === 'number' ? weightRaw : parseFloat(String(weightRaw).replace(/,/g, ''));
+      if (!isNaN(n) && n >= 0) progress_weight = Math.min(100, Math.max(0, n));
+    }
+    activities.push({
+      sr_no,
+      activity_name: name,
+      activity_type,
+      target_relative: target_relative || (target_date || ''),
+      target_date,
+      sort_order: i - dataStart,
+      inspection_tpi_involved,
+      progress_weight,
+    });
+  }
+
+  result.commencement_date = commencement_date;
+  result.activities = activities;
+  return result;
+}
