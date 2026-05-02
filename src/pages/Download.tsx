@@ -37,6 +37,81 @@ const formatBytes = (bytes: number): string => {
   return `${value.toFixed(precision)} ${units[index]}`;
 };
 
+/**
+ * GitHub release download URLs cannot be sized via browser HEAD (CORS / no content-length).
+ * Public REST API returns asset sizes and allows browser CORS for anonymous reads.
+ */
+async function fetchGitHubReleaseAssetSize(assetUrl: string): Promise<number | null> {
+  try {
+    const u = new URL(assetUrl);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host !== "github.com") return null;
+
+    const path = u.pathname.replace(/^\/+|\/+$/g, "");
+    const tagged = path.match(/^([^/]+)\/([^/]+)\/releases\/download\/([^/]+)\/(.+)$/);
+    if (tagged) {
+      const [, owner, repo, tag, fileSegment] = tagged;
+      const fileName = decodeURIComponent(fileSegment);
+      const api = `https://api.github.com/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(tag)}`;
+      const res = await fetch(api, { headers: { Accept: "application/vnd.github+json" } });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { assets?: Array<{ name: string; size: number }> };
+      const asset = data.assets?.find((a) => a.name === fileName || a.name === fileSegment);
+      return asset?.size ?? null;
+    }
+
+    const latest = path.match(/^([^/]+)\/([^/]+)\/releases\/latest\/download\/(.+)$/);
+    if (latest) {
+      const [, owner, repo, fileSegment] = latest;
+      const fileName = decodeURIComponent(fileSegment);
+      const api = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+      const res = await fetch(api, { headers: { Accept: "application/vnd.github+json" } });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { assets?: Array<{ name: string; size: number }> };
+      const asset = data.assets?.find(
+        (a) => a.name === fileName || a.name === fileSegment || a.name === decodeURI(fileSegment),
+      );
+      return asset?.size ?? null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+async function fetchRemoteFileSize(url: string): Promise<number | null> {
+  const gh = await fetchGitHubReleaseAssetSize(url);
+  if (gh != null) return gh;
+
+  try {
+    const head = await fetch(url, { method: "HEAD", redirect: "follow", mode: "cors" });
+    const cl = head.headers.get("content-length");
+    const n = cl ? Number(cl) : NaN;
+    if (Number.isFinite(n) && n > 0) return n;
+  } catch {
+    // ignore
+  }
+
+  try {
+    const range = await fetch(url, {
+      method: "GET",
+      headers: { Range: "bytes=0-0" },
+      redirect: "follow",
+      mode: "cors",
+    });
+    const cr = range.headers.get("content-range");
+    if (cr) {
+      const total = cr.split("/").pop();
+      const n = total ? Number(total) : NaN;
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
+}
+
 const Download = () => {
   const recommended = useMemo(() => detectPlatform(), []);
   const downloadUrls = useMemo(() => downloadUrlsFromEnv(), []);
@@ -91,14 +166,11 @@ const Download = () => {
             return [platform, "—"] as const;
           }
 
-          try {
-            const response = await fetch(url, { method: "HEAD", redirect: "follow" });
-            const contentLength = response.headers.get("content-length");
-            const parsed = contentLength ? Number(contentLength) : NaN;
-            return [platform, formatBytes(parsed)] as const;
-          } catch {
-            return [platform, "Size unavailable"] as const;
+          const bytes = await fetchRemoteFileSize(url);
+          if (bytes != null) {
+            return [platform, formatBytes(bytes)] as const;
           }
+          return [platform, "Size unavailable"] as const;
         }),
       );
 
