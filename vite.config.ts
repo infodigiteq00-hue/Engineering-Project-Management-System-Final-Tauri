@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => {
     String((env as Record<string, string | undefined>)[name] ?? process.env[name] ?? "");
 
   return {
+  // Relative asset URLs so the production desktop bundle loads JS/CSS from the Tauri webview origin (absolute "/" can white-screen in packaged apps).
+  base: "./",
   server: {
     host: "::",
     port: 3000,
