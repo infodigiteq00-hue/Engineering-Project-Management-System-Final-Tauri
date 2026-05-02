@@ -3,9 +3,18 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Debug logging
+// Never throw at import time — that prevents React from mounting (blank window). Missing env is handled below.
+const resolvedUrl =
+  (typeof supabaseUrl === 'string' && supabaseUrl.trim()) ||
+  'https://env-not-configured.supabase.co'
+const resolvedKey =
+  (typeof supabaseAnonKey === 'string' && supabaseAnonKey.trim()) ||
+  'sb-env-not-configured-placeholder'
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+  console.error(
+    '[projectflo] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Add them to .env at the project root (same folder as package.json), then restart the dev server / rebuild the desktop app.'
+  )
 }
 
 // Prevent multiple instances by using a singleton pattern
@@ -13,7 +22,7 @@ let supabaseInstance: ReturnType<typeof createClient> | null = null
 
 export const supabase = (() => {
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+    supabaseInstance = createClient(resolvedUrl, resolvedKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,

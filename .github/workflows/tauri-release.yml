@@ -50,10 +50,20 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # Add repository secrets: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (same values as local .env).
+      # Optional: VITE_EMAILJS_*, VITE_DOWNLOAD_URL_* for full desktop behaviour in release builds.
       - name: Build and publish Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
+          VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}
+          VITE_EMAILJS_PUBLIC_KEY: ${{ secrets.VITE_EMAILJS_PUBLIC_KEY }}
+          VITE_DOWNLOAD_URL_WINDOWS: ${{ secrets.VITE_DOWNLOAD_URL_WINDOWS }}
+          VITE_DOWNLOAD_URL_MACOS: ${{ secrets.VITE_DOWNLOAD_URL_MACOS }}
+          VITE_DOWNLOAD_URL_LINUX: ${{ secrets.VITE_DOWNLOAD_URL_LINUX }}
         with:
           tagName: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.ref_name }}
           releaseName: "Desktop Release ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.ref_name }}"

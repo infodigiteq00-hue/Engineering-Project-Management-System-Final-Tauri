@@ -6,40 +6,11 @@ import { cn } from "@/lib/utils";
 
 type Platform = "windows" | "macos" | "linux";
 
-const releases = {
-  windows: "https://github.com/your-org/your-repo/releases/latest/download/your-app-windows.exe",
-  macos: "https://github.com/your-org/your-repo/releases/latest/download/your-app-macos.dmg",
-  linux: "https://github.com/your-org/your-repo/releases/latest/download/your-app-linux.AppImage",
-} as const;
-
-const platformConfig: Record<
-  Platform,
-  {
-    label: string;
-    subtitle: string;
-    icon: typeof Laptop;
-    href: string;
-  }
-> = {
-  windows: {
-    label: "Windows",
-    subtitle: "Windows 10+",
-    icon: MonitorDown,
-    href: releases.windows,
-  },
-  macos: {
-    label: "macOS",
-    subtitle: "macOS 12+",
-    icon: Apple,
-    href: releases.macos,
-  },
-  linux: {
-    label: "Linux",
-    subtitle: "Ubuntu, Debian, Fedora",
-    icon: Laptop,
-    href: releases.linux,
-  },
-};
+const downloadUrlsFromEnv = (): Record<Platform, string> => ({
+  windows: import.meta.env.VITE_DOWNLOAD_URL_WINDOWS?.trim() ?? "",
+  macos: import.meta.env.VITE_DOWNLOAD_URL_MACOS?.trim() ?? "",
+  linux: import.meta.env.VITE_DOWNLOAD_URL_LINUX?.trim() ?? "",
+});
 
 const detectPlatform = (): Platform | null => {
   if (typeof navigator === "undefined") {
@@ -68,10 +39,45 @@ const formatBytes = (bytes: number): string => {
 
 const Download = () => {
   const recommended = useMemo(() => detectPlatform(), []);
+  const downloadUrls = useMemo(() => downloadUrlsFromEnv(), []);
+
+  const platformConfig = useMemo(
+    () =>
+      ({
+        windows: {
+          label: "Windows",
+          subtitle: "Windows 10+",
+          icon: MonitorDown,
+          href: downloadUrls.windows,
+        },
+        macos: {
+          label: "macOS",
+          subtitle: "macOS 12+ (Apple Silicon build)",
+          icon: Apple,
+          href: downloadUrls.macos,
+        },
+        linux: {
+          label: "Linux",
+          subtitle: "Ubuntu, Debian, Fedora",
+          icon: Laptop,
+          href: downloadUrls.linux,
+        },
+      }) satisfies Record<
+        Platform,
+        {
+          label: string;
+          subtitle: string;
+          icon: typeof Laptop;
+          href: string;
+        }
+      >,
+    [downloadUrls],
+  );
+
   const [fileSizes, setFileSizes] = useState<Record<Platform, string>>({
-    windows: "Checking size...",
-    macos: "Checking size...",
-    linux: "Checking size...",
+    windows: "—",
+    macos: "—",
+    linux: "—",
   });
 
   useEffect(() => {
@@ -81,6 +87,9 @@ const Download = () => {
       const entries = await Promise.all(
         (Object.keys(platformConfig) as Platform[]).map(async (platform) => {
           const url = platformConfig[platform].href;
+          if (!url) {
+            return [platform, "—"] as const;
+          }
 
           try {
             const response = await fetch(url, { method: "HEAD", redirect: "follow" });
@@ -102,7 +111,7 @@ const Download = () => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [platformConfig]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -143,15 +152,21 @@ const Download = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Button asChild className="h-auto w-full py-3">
-                    <a href={item.href} target="_blank" rel="noreferrer">
-                      <span className="inline-flex items-center gap-2">
-                        <DownloadIcon className="h-4 w-4" />
-                        Download for {item.label}
-                      </span>
-                      <span className="ml-2 text-xs font-normal opacity-90">({fileSizes[platform]})</span>
-                    </a>
-                  </Button>
+                  {item.href ? (
+                    <Button asChild className="h-auto w-full py-3">
+                      <a href={item.href} target="_blank" rel="noreferrer">
+                        <span className="inline-flex items-center gap-2">
+                          <DownloadIcon className="h-4 w-4" />
+                          Download for {item.label}
+                        </span>
+                        <span className="ml-2 text-xs font-normal opacity-90">({fileSizes[platform]})</span>
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button type="button" disabled className="h-auto w-full py-3">
+                      <span>Set VITE_DOWNLOAD_URL_{platform.toUpperCase()} in .env</span>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -175,7 +190,9 @@ const Download = () => {
             </div>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Replace placeholder GitHub release URLs in <code>src/pages/Download.tsx</code> to fetch real file sizes.
+            Set <code>VITE_DOWNLOAD_URL_WINDOWS</code>, <code>VITE_DOWNLOAD_URL_MACOS</code>, and{" "}
+            <code>VITE_DOWNLOAD_URL_LINUX</code> in <code>.env</code> or your host env (see <code>.env.example</code>
+            ). Restart the dev server after changing env.
           </p>
         </section>
       </div>
