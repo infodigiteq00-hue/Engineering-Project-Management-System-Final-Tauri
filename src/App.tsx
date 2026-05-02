@@ -14,6 +14,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import NoPermission from "./components/NoPermission";
 import ClientProjectView from "./pages/ClientProjectView";
+import Download from "./pages/Download";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/view/:token" element={<ClientProjectView />} />
+            <Route path="/download" element={<Download />} />
 
             {/* Protected routes */}
             <Route path="/" element={<RoleBasedRoute />} />

@@ -704,6 +704,16 @@ const Login = () => {
           <div className="text-center mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Welcome back</h2>
             <p className="text-sm sm:text-base text-gray-600">Enter your credentials to access your account</p>
+            <p className="mt-3 text-sm sm:text-base text-gray-600">
+              {" "}
+              <button
+                type="button"
+                onClick={() => navigate('/download')}
+                className="font-medium text-blue-600 hover:text-blue-700"
+              >
+                Download desktop app first
+              </button>
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -788,6 +798,8 @@ const Login = () => {
               </button>
             </p>
           </div>
+          
+          
         </div>
       </div>
     </div>
