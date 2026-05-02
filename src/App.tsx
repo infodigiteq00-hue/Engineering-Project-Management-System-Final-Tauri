@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuthOptional } from "@/contexts/AuthContext";
 import { NotificationReadsProvider } from "@/contexts/NotificationReadsContext";
 import RoleBasedRoute from "@/components/RoleBasedRoute";
@@ -17,6 +17,24 @@ import ClientProjectView from "./pages/ClientProjectView";
 import Download from "./pages/Download";
 
 const queryClient = new QueryClient();
+
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
+/** Packaged Tauri uses a non-localhost asset origin; BrowserRouter + History API can white-screen there. Vercel / `tauri dev` stay on BrowserRouter. */
+function AppRouter({ children }: { children: React.ReactNode }) {
+  const useHash =
+    typeof window !== "undefined" &&
+    "__TAURI_INTERNALS__" in window &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1";
+  if (useHash) {
+    return <HashRouter future={routerFuture}>{children}</HashRouter>;
+  }
+  return <BrowserRouter future={routerFuture}>{children}</BrowserRouter>;
+}
 
 function NotificationReadsGate({ children }: { children: React.ReactNode }) {
   const auth = useAuthOptional();
@@ -34,12 +52,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true
-          }}
-        >
+        <AppRouter>
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
@@ -60,7 +73,7 @@ const App = () => (
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </AppRouter>
       </TooltipProvider>
       </NotificationReadsGate>
     </AuthProvider>

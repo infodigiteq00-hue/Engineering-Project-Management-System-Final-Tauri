@@ -117,7 +117,7 @@ const SignUp = () => {
             description: `Account created successfully!\n\n📧 Please check your email (${formData.email}) and click the confirmation link to verify your account.\n\n🔗 After email confirmation, you can login with your credentials.`
           });
           setTimeout(() => {
-            window.location.href = '/login';
+            navigate('/login', { replace: true });
           }, 2000);
           return;
         }
@@ -367,7 +367,7 @@ const SignUp = () => {
           
           // Wait 2 seconds before redirect so user can see the success message
           setTimeout(() => {
-            window.location.href = '/login';
+            navigate('/login', { replace: true });
           }, 2000);
           return; // Exit here, don't run existing logic
         }
@@ -635,7 +635,7 @@ const SignUp = () => {
         
         // Wait 2 seconds before redirect so user can see the success message
         setTimeout(() => {
-          window.location.href = '/login';
+          navigate('/login', { replace: true });
         }, 2000);
       } else {
         console.error('No user data returned from auth signup');

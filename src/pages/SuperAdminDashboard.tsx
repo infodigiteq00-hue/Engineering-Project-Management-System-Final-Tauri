@@ -118,7 +118,7 @@ const SuperAdminDashboard = () => {
       
       // IMMEDIATE: Force redirect right away (don't wait for signOut)
       // // console.log('✅ Clearing storage and redirecting immediately...');
-      window.location.replace('/login');
+      navigate('/login', { replace: true });
       
       // Continue signOut in background (non-blocking)
       // We don't await this - redirect happens immediately
@@ -148,7 +148,7 @@ const SuperAdminDashboard = () => {
       if (standaloneEquipment) localStorage.setItem('epms_cache_equipment_standalone', standaloneEquipment);
       
       sessionStorage.clear();
-      window.location.replace('/login');
+      navigate('/login', { replace: true });
     }
   };
   const [companies, setCompanies] = useState<Company[]>([]);

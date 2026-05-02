@@ -663,8 +663,12 @@ const Login = () => {
         redirectBasedOnRole(userData.role);
       } catch (redirectError) {
         console.error('🚨 Redirect error:', redirectError);
-        // If redirect fails, force navigation
-        window.location.href = userData.role === 'super_admin' ? '/super-admin' : '/company-dashboard';
+        // If redirect fails, force navigation (use navigate so Tauri HashRouter keeps working)
+        if (userData.role === 'super_admin') {
+          navigate('/super-admin', { replace: true });
+        } else {
+          navigate('/company-dashboard', { replace: true });
+        }
       }
 
     } catch (err: any) {

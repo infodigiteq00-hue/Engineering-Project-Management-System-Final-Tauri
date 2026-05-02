@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
@@ -13,6 +13,7 @@ const RoleBasedRoute = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Check localStorage first before any async operations
@@ -46,7 +47,7 @@ const RoleBasedRoute = () => {
           // console.log('❌ No valid session, clearing storage and redirecting to login');
           const { safeLocalStorageClear } = await import('@/utils/cache');
           safeLocalStorageClear();
-          window.location.href = '/login';
+          navigate('/login', { replace: true });
           return;
         }
 
@@ -61,14 +62,14 @@ const RoleBasedRoute = () => {
       
       if (sessionError || !session) {
         // console.log('No active session, redirecting to login');
-        window.location.href = '/login';
+        navigate('/login', { replace: true });
         return;
       }
 
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        window.location.href = '/login';
+        navigate('/login', { replace: true });
         return;
       }
       
@@ -125,14 +126,14 @@ const RoleBasedRoute = () => {
 
       if (userError || !userData) {
         console.error('❌ User not found in database:', userError);
-        window.location.href = '/login';
+        navigate('/login', { replace: true });
         return;
       }
 
       if (!userData.is_active) {
         toast({ title: 'Error', description: 'Your account has been deactivated. Please contact your administrator.', variant: 'destructive' });
         await supabase.auth.signOut();
-        window.location.href = '/login';
+        navigate('/login', { replace: true });
         return;
       }
 
@@ -148,7 +149,7 @@ const RoleBasedRoute = () => {
       // User auth check completed successfully
     } catch (error) {
       console.error('Auth error:', error);
-      window.location.href = '/login';
+      navigate('/login', { replace: true });
     } finally {
       setLoading(false);
     }
@@ -178,7 +179,7 @@ const RoleBasedRoute = () => {
   }
 
   // Render appropriate dashboard based on role and current path
-  const currentPath = window.location.pathname;
+  const currentPath = location.pathname;
   
   // If user is on /super-admin path, show SuperAdminDashboard
   if (currentPath === '/super-admin' && userRole === 'super_admin') {
