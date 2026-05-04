@@ -82,6 +82,38 @@ All colors MUST be HSL.
     display: none;  /* Chrome, Safari and Opera */
   }
 
+  /* Horizontal overflow-x regions: visible bar (WebView2 / installed app often hides overlay X scrollbars). */
+  .scrollbar-x-visible {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(215 16% 75%) hsl(210 20% 96%);
+  }
+  .scrollbar-x-visible::-webkit-scrollbar {
+    height: 10px;
+  }
+  .scrollbar-x-visible::-webkit-scrollbar-track {
+    background: hsl(210 20% 96%);
+  }
+  .scrollbar-x-visible::-webkit-scrollbar-thumb {
+    background-color: hsl(215 16% 75%);
+    border-radius: 9999px;
+  }
+
+  /* Vertical overflow-y regions (modals, panels) — WebView2 often hides overlay Y bars. */
+  .scrollbar-y-visible {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(215 16% 75%) hsl(210 20% 96%);
+  }
+  .scrollbar-y-visible::-webkit-scrollbar {
+    width: 10px;
+  }
+  .scrollbar-y-visible::-webkit-scrollbar-track {
+    background: hsl(210 20% 96%);
+  }
+  .scrollbar-y-visible::-webkit-scrollbar-thumb {
+    background-color: hsl(215 16% 75%);
+    border-radius: 9999px;
+  }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -129,4 +161,50 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/*
+ * Tauri / WebView2: keep all scrolling on #root (not html/body). Embedded WebViews often omit
+ * document scrollbars; forcing a single overflow-y:auto layer makes vertical + gutter styling reliable.
+ * Unlayered so this wins over Tailwind preflight order quirks.
+ */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-x: none;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(215 16% 75%) hsl(210 20% 96%);
+  background-color: hsl(var(--background));
+}
+
+#root::-webkit-scrollbar {
+  width: 14px;
+}
+
+#root::-webkit-scrollbar:horizontal {
+  height: 12px;
+}
+
+#root::-webkit-scrollbar-track {
+  background: hsl(210 20% 96%);
+}
+
+#root::-webkit-scrollbar-thumb {
+  background-color: hsl(215 16% 75%);
+  border-radius: 9999px;
 }

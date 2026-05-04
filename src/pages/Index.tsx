@@ -2599,7 +2599,7 @@ Note: Please download the Recommendation Letter template using the link above, f
   if (shouldShowWelcomeScreen) {
     return (
       /* Same shell + palette as main dashboard (ProjectSummaryCards: blue/emerald gradients, gray-50 page, white cards) */
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen min-w-0 max-w-full overflow-x-hidden bg-gray-50">
         <div className="container mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-4 py-8 sm:px-6">
           <div className="mb-8 flex justify-center">
             {firmLogo ? (
@@ -2684,7 +2684,7 @@ Note: Please download the Recommendation Letter template using the link above, f
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen min-w-0 max-w-full overflow-x-hidden bg-gray-50">
       {/* Blocking modal when super admin has paused company services */}
       {servicesPaused && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" aria-modal="true" role="dialog">
@@ -2700,12 +2700,12 @@ Note: Please download the Recommendation Letter template using the link above, f
           </div>
         </div>
       )}
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
+      <div className="container mx-auto min-w-0 max-w-full px-4 sm:px-6 py-4 sm:py-8">
         <ProjectHeader loading={loading} userName={userName} userRole={userRole} firmName={firmName} firmLogo={firmLogo} />
 
         {/* Main Tab Navigation */}
         <div className="mt-6">
-          <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden">
+          <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden scrollbar-x-visible">
             <nav className="-mb-px flex space-x-8 min-w-max flex-nowrap px-1">
               <button
                 onClick={() => {
@@ -2892,7 +2892,7 @@ Note: Please download the Recommendation Letter template using the link above, f
 
               {/* Clean Tab System */}
               <div className="mb-6">
-                <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden xl:overflow-x-visible scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden xl:overflow-x-visible scrollbar-x-visible scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   <nav className="-mb-px flex min-w-max space-x-6 sm:space-x-8 px-3 sm:px-0 whitespace-nowrap pb-0.5">
                     <button
                       onClick={() => setActiveTab('all')}
@@ -3541,7 +3541,7 @@ Note: Please download the Recommendation Letter template using the link above, f
                 </button>
               </nav>
             </div>
-            <div className="px-5 py-3 overflow-auto flex-1 space-y-4">
+            <div className="px-5 py-3 overflow-auto flex-1 space-y-4 scrollbar-y-visible scrollbar-x-visible">
               {weightageActiveTab === 'documentation' ? (
                 <>
                   <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-700">

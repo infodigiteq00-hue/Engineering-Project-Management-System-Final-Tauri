@@ -1755,7 +1755,7 @@ const CompanyHighlights = ({ onSelectProject, onMarkAsRead, initialProjectIds, i
           </div>
 
           {/* Tabs */}
-          <div className="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 pb-2.5 sm:pb-3 border-b border-gray-200 overflow-x-auto">
+          <div className="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 pb-2.5 sm:pb-3 border-b border-gray-200 overflow-x-auto scrollbar-x-visible">
             <div className="flex gap-1.5 sm:gap-2 md:gap-4 min-w-max sm:min-w-0">
               {canSeeTab('production') && (
                 <button

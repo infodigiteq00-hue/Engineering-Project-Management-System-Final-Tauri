@@ -1533,7 +1533,7 @@ const UnifiedProjectView = ({
 
         {/* Unified Tabbed Interface - tabs align with content width, horizontally scrollable on small screens */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="w-full overflow-x-auto overflow-y-hidden xl:overflow-x-visible xl:overflow-y-visible mb-16 scroll-smooth p-1 scrollbar-hide">
+          <div className="w-full overflow-x-auto overflow-y-hidden xl:overflow-x-visible xl:overflow-y-visible mb-16 scroll-smooth p-1 scrollbar-x-visible">
             <TabsList className={`flex xl:grid flex-nowrap min-w-max xl:min-w-0 xl:w-full bg-transparent rounded-2xl p-2 gap-2 ${(userRole === 'vdcr_manager' || userRole === 'editor') ? 'xl:grid-cols-4' : userRole === 'viewer' ? 'xl:grid-cols-5' : 'xl:grid-cols-6'}`}>
             <TabsTrigger 
               value="equipment"
@@ -1679,7 +1679,7 @@ const UnifiedProjectView = ({
                     {/* VDCR Status Tabs */}
                     <div className="bg-white border border-gray-200 rounded-lg">
                       <div className="border-b border-gray-200">
-                        <nav className="flex space-x-4 sm:space-x-8 px-3 sm:px-6 overflow-x-auto scrollbar-hide" aria-label="Documentation Status Tabs">
+                        <nav className="flex space-x-4 sm:space-x-8 px-3 sm:px-6 overflow-x-auto scrollbar-x-visible" aria-label="Documentation Status Tabs">
                           <button
                             onClick={() => setSelectedVDCRStatus('approved')}
                             className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${selectedVDCRStatus === 'approved'

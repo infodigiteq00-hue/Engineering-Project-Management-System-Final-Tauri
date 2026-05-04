@@ -7220,7 +7220,7 @@ const EquipmentGrid = ({ equipment, projectName, projectId, onBack, onViewDetail
 
           {/* Unified Tabbed Interface */}
           <Tabs value={equipmentDetailsTab} onValueChange={setEquipmentDetailsTab} className="w-full">
-            <div className="overflow-x-auto overflow-y-hidden xl:overflow-x-visible xl:overflow-y-visible mb-16 scroll-smooth p-1">
+            <div className="overflow-x-auto overflow-y-hidden xl:overflow-x-visible xl:overflow-y-visible mb-16 scroll-smooth p-1 scrollbar-x-visible">
               <TabsList className={`flex xl:grid min-w-max xl:w-full bg-transparent rounded-2xl p-2 ${(currentUserRole === 'vdcr_manager' || currentUserRole === 'editor' || currentUserRole === 'viewer') ? 'xl:grid-cols-2' : 'xl:grid-cols-3'} gap-2 flex-nowrap`}>
                 <TabsTrigger 
                   value="equipment-details" 
@@ -10001,7 +10001,7 @@ const EquipmentGrid = ({ equipment, projectName, projectId, onBack, onViewDetail
 
       {/* Phase Tabs + Arrange Equipment Order */}
       <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden scrollbar-x-visible scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           <div className="flex items-center justify-between gap-2 px-2 sm:px-4">
             <nav className="flex min-w-max space-x-6 sm:space-x-8 px-2 sm:px-4 whitespace-nowrap pb-0.5" aria-label="Equipment Phase Tabs">
               <button

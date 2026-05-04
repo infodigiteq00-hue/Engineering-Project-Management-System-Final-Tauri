@@ -17,6 +17,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
+/** False when the JS bundle was built without real Vite env (missing .env locally or CI/Vercel vars at `vite build` time). */
+export const isSupabaseBuildConfigured =
+  !resolvedUrl.includes('env-not-configured') &&
+  !resolvedKey.includes('env-not-configured-placeholder')
+
 // Prevent multiple instances by using a singleton pattern
 let supabaseInstance: ReturnType<typeof createClient> | null = null
 

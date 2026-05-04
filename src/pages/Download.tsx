@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 type Platform = "windows" | "macos" | "linux";
 
+type GhAsset = { name: string; browser_download_url: string };
+
 const downloadUrlsFromEnv = (): Record<Platform, string> => ({
   windows: import.meta.env.VITE_DOWNLOAD_URL_WINDOWS?.trim() ?? "",
   macos: import.meta.env.VITE_DOWNLOAD_URL_MACOS?.trim() ?? "",
@@ -79,6 +81,56 @@ async function fetchGitHubReleaseAssetSize(assetUrl: string): Promise<number | n
   return null;
 }
 
+/** `owner/repo` from any `.../releases/...` GitHub URL, or null. */
+function parseGithubReleasesRepo(urlString: string): { owner: string; repo: string } | null {
+  try {
+    const u = new URL(urlString.trim());
+    if (u.hostname.replace(/^www\./, "") !== "github.com") return null;
+    const m = u.pathname.replace(/\/+/g, "/").match(/^\/([^/]+)\/([^/]+)\/releases\//);
+    if (!m) return null;
+    return { owner: m[1], repo: m[2] };
+  } catch {
+    return null;
+  }
+}
+
+function resolveRepoForLatestApi(urls: Record<Platform, string>): { owner: string; repo: string } | null {
+  const override = import.meta.env.VITE_DOWNLOAD_RELEASES_REPO?.trim();
+  if (override) {
+    const parts = override.split("/").map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) return { owner: parts[0]!, repo: parts[1]! };
+  }
+  for (const key of ["windows", "macos", "linux"] as const) {
+    const u = urls[key];
+    if (u) {
+      const parsed = parseGithubReleasesRepo(u);
+      if (parsed) return parsed;
+    }
+  }
+  return null;
+}
+
+/** Pick installer URLs from GitHub latest-release JSON (same files as the Releases “Latest” page). */
+function pickLatestReleaseDownloadUrls(assets: GhAsset[]): Record<Platform, string> {
+  const win =
+    assets.find((a) => /x64-setup\.exe$/i.test(a.name))?.browser_download_url ??
+    assets.find((a) => /\.exe$/i.test(a.name) && /setup/i.test(a.name))?.browser_download_url ??
+    "";
+
+  const mac =
+    assets.find((a) => /\.dmg$/i.test(a.name) && /aarch64|arm64/i.test(a.name))?.browser_download_url ??
+    assets.find((a) => /\.dmg$/i.test(a.name))?.browser_download_url ??
+    "";
+
+  const linux =
+    assets.find((a) => /\.AppImage$/i.test(a.name))?.browser_download_url ??
+    assets.find((a) => /\.deb$/i.test(a.name) && /amd64/i.test(a.name))?.browser_download_url ??
+    assets.find((a) => /\.deb$/i.test(a.name))?.browser_download_url ??
+    "";
+
+  return { windows: win, macos: mac, linux: linux };
+}
+
 async function fetchRemoteFileSize(url: string): Promise<number | null> {
   const gh = await fetchGitHubReleaseAssetSize(url);
   if (gh != null) return gh;
@@ -116,6 +168,54 @@ const Download = () => {
   const recommended = useMemo(() => detectPlatform(), []);
   const downloadUrls = useMemo(() => downloadUrlsFromEnv(), []);
 
+  const [githubLatest, setGithubLatest] = useState<{
+    tag: string;
+    urls: Record<Platform, string>;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const repo = resolveRepoForLatestApi(downloadUrls);
+    if (!repo) {
+      setGithubLatest(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void (async () => {
+      try {
+        const api = `https://api.github.com/repos/${repo.owner}/${repo.repo}/releases/latest`;
+        const res = await fetch(api, { headers: { Accept: "application/vnd.github+json" } });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { tag_name?: string; assets?: GhAsset[] };
+        const assets = data.assets ?? [];
+        const picked = pickLatestReleaseDownloadUrls(assets);
+        if (cancelled) return;
+        if (!picked.windows && !picked.macos && !picked.linux) return;
+        setGithubLatest({
+          tag: typeof data.tag_name === "string" ? data.tag_name : "latest",
+          urls: picked,
+        });
+      } catch {
+        if (!cancelled) setGithubLatest(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [downloadUrls]);
+
+  const effectiveDownloadUrls = useMemo((): Record<Platform, string> => {
+    if (!githubLatest) return downloadUrls;
+    return {
+      windows: githubLatest.urls.windows || downloadUrls.windows,
+      macos: githubLatest.urls.macos || downloadUrls.macos,
+      linux: githubLatest.urls.linux || downloadUrls.linux,
+    };
+  }, [githubLatest, downloadUrls]);
+
   const platformConfig = useMemo(
     () =>
       ({
@@ -123,19 +223,19 @@ const Download = () => {
           label: "Windows",
           subtitle: "Windows 10+",
           icon: MonitorDown,
-          href: downloadUrls.windows,
+          href: effectiveDownloadUrls.windows,
         },
         macos: {
           label: "macOS",
           subtitle: "macOS 12+ (Apple Silicon build)",
           icon: Apple,
-          href: downloadUrls.macos,
+          href: effectiveDownloadUrls.macos,
         },
         linux: {
           label: "Linux",
           subtitle: "Ubuntu, Debian, Fedora",
           icon: Laptop,
-          href: downloadUrls.linux,
+          href: effectiveDownloadUrls.linux,
         },
       }) satisfies Record<
         Platform,
@@ -146,7 +246,7 @@ const Download = () => {
           href: string;
         }
       >,
-    [downloadUrls],
+    [effectiveDownloadUrls],
   );
 
   const [fileSizes, setFileSizes] = useState<Record<Platform, string>>({
@@ -196,6 +296,14 @@ const Download = () => {
           <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground sm:text-base">
             Download the latest version for your operating system. The recommended option is highlighted automatically.
           </p>
+          {githubLatest && (
+            <p className="mx-auto mt-3 max-w-2xl rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:text-sm">
+              Installers are taken from the current GitHub release{" "}
+              <span className="font-medium text-foreground">{githubLatest.tag}</span> so they match the{" "}
+              <span className="whitespace-nowrap">Releases → Latest</span> assets (avoids stale links baked into an old
+              deploy).
+            </p>
+          )}
         </section>
 
         <section className="grid gap-4 md:grid-cols-3">
@@ -262,9 +370,10 @@ const Download = () => {
             </div>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Set <code>VITE_DOWNLOAD_URL_WINDOWS</code>, <code>VITE_DOWNLOAD_URL_MACOS</code>, and{" "}
-            <code>VITE_DOWNLOAD_URL_LINUX</code> in <code>.env</code> or your host env (see <code>.env.example</code>
-            ). Restart the dev server after changing env.
+            Set <code>VITE_DOWNLOAD_URL_WINDOWS</code> (or any GitHub <code>…/releases/…</code> URL for this repo) so the
+            app can discover <code>owner/repo</code>, or set <code>VITE_DOWNLOAD_RELEASES_REPO=owner/repo</code>. The
+            download page then resolves files from <strong>GitHub latest</strong> so they stay in sync with the Releases
+            page. Restart the dev server after changing env.
           </p>
         </section>
       </div>

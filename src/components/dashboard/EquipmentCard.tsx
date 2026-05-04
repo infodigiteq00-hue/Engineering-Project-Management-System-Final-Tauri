@@ -391,7 +391,7 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
 
       {/* Tabs for detailed information */}
       <Tabs defaultValue="overview" className="w-full flex-1 flex flex-col">
-        <div className="overflow-x-auto overflow-y-hidden lg:overflow-x-visible lg:overflow-y-visible xl:overflow-x-visible xl:overflow-y-visible scroll-smooth -mx-1 px-1 lg:mx-0 lg:px-0">
+        <div className="overflow-x-auto overflow-y-hidden lg:overflow-x-visible lg:overflow-y-visible xl:overflow-x-visible xl:overflow-y-visible scroll-smooth -mx-1 px-1 lg:mx-0 lg:px-0 scrollbar-x-visible">
           <TabsList className="flex lg:grid lg:w-full lg:grid-cols-5 xl:grid xl:w-full xl:grid-cols-5 h-8 sm:h-9 md:h-10 min-w-max lg:min-w-0 gap-1 lg:gap-0">
             <TabsTrigger value="overview" className="text-[10px] sm:text-xs md:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Overview</TabsTrigger>
             <TabsTrigger value="technical" className="text-[10px] sm:text-xs md:text-sm px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Technical</TabsTrigger>
@@ -581,7 +581,7 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
         <TabsContent value="technical" className="mt-2 sm:mt-3 md:mt-4 space-y-2 flex-1 flex flex-col">
           <div className="flex-1 flex flex-col max-h-[350px] sm:max-h-[400px] md:max-h-[450px] overflow-y-auto pr-1 sm:pr-2">
             {/* Technical Section Buttons */}
-            <div className="overflow-x-auto overflow-y-hidden lg:overflow-x-visible lg:overflow-y-visible xl:overflow-x-visible xl:overflow-y-visible scroll-smooth mb-3 sm:mb-4 -mx-1 px-1 lg:mx-0 lg:px-0">
+            <div className="overflow-x-auto overflow-y-hidden lg:overflow-x-visible lg:overflow-y-visible xl:overflow-x-visible xl:overflow-y-visible scroll-smooth mb-3 sm:mb-4 -mx-1 px-1 lg:mx-0 lg:px-0 scrollbar-x-visible">
               <div className="flex flex-nowrap lg:flex-wrap gap-1.5 sm:gap-2 min-w-max lg:min-w-0">
               {technicalSections.map((section) => (
                 <Button

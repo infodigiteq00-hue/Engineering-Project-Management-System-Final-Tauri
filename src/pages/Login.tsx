@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseBuildConfigured } from "@/lib/supabase";
 import { fastAPI } from "@/lib/api";
 import {
   fetchUserRowWithFirmById,
@@ -719,6 +719,21 @@ const Login = () => {
               </button>
             </p>
           </div>
+
+          {!isSupabaseBuildConfigured && (
+            <div
+              className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-left text-xs sm:text-sm text-amber-900"
+              role="alert"
+            >
+              <p className="font-medium">Supabase is not configured in this build</p>
+              <p className="mt-1 text-amber-800/90">
+                Sign-in cannot reach your project until <code className="rounded bg-amber-100/80 px-1">VITE_SUPABASE_URL</code> and{" "}
+                <code className="rounded bg-amber-100/80 px-1">VITE_SUPABASE_ANON_KEY</code> were present when the app was built.
+                For the desktop app, set them as GitHub Actions repository secrets and install a release produced after that; for the
+                website, set the same variables on your host (e.g. Vercel) and redeploy.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             {/* Email */}

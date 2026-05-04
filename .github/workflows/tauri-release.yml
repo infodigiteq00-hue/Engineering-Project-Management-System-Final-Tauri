@@ -52,6 +52,7 @@ jobs:
 
       # Add repository secrets: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (same values as local .env).
       # Optional: VITE_EMAILJS_*, VITE_DOWNLOAD_URL_* for full desktop behaviour in release builds.
+      # Vercel /download page: use GitHub-style VITE_DOWNLOAD_URL_* or VITE_DOWNLOAD_RELEASES_REPO so latest installers match Releases (see Download.tsx).
       - name: Build and publish Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
