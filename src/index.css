@@ -82,6 +82,22 @@ All colors MUST be HSL.
     display: none;  /* Chrome, Safari and Opera */
   }
 
+  /* Horizontal overflow-x regions: keep a visible bar (WebView/desktop often hides overlay X bars). */
+  .scrollbar-x-visible {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(215 16% 75%) hsl(210 20% 96%);
+  }
+  .scrollbar-x-visible::-webkit-scrollbar {
+    height: 10px;
+  }
+  .scrollbar-x-visible::-webkit-scrollbar-track {
+    background: hsl(210 20% 96%);
+  }
+  .scrollbar-x-visible::-webkit-scrollbar-thumb {
+    background-color: hsl(215 16% 75%);
+    border-radius: 9999px;
+  }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -126,7 +142,13 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  /* Avoid whole-window horizontal pan when content is slightly wider than the viewport (common in Tauri). */
+  html {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
 }

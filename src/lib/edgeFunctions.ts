@@ -2,9 +2,9 @@
 // Provides secure client-side functions to call Supabase Edge Functions
 // This ensures sensitive keys (like service role key) are never exposed to frontend
 
-import { supabase } from './supabase'
+import { supabase, SUPABASE_REST_ORIGIN } from './supabase'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ypdlbqrcxnugrvllbmsi.supabase.co'
+const SUPABASE_URL = SUPABASE_REST_ORIGIN
 
 // Helper function to convert File to base64
 function fileToBase64(file: File): Promise<string> {

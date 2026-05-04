@@ -813,7 +813,7 @@ const StandaloneEquipmentCard: React.FC<StandaloneEquipmentCardProps> = (props) 
 
 
                   <Tabs defaultValue="overview" className="w-full flex-1 flex flex-col">
-                    <div className="overflow-x-auto overflow-y-hidden scroll-smooth -mx-1 px-1 md:mx-0 md:px-0 scrollbar-hide md:overflow-visible">
+                    <div className="overflow-x-auto overflow-y-hidden scroll-smooth -mx-1 px-1 md:mx-0 md:px-0 scrollbar-x-visible md:overflow-visible">
                       <TabsList className="flex md:grid md:w-full md:grid-cols-5 h-8 sm:h-9 min-w-max md:min-w-0 gap-1 md:gap-0 flex-nowrap md:flex-none justify-start md:justify-stretch">
                         <TabsTrigger value="overview" className="text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Overview</TabsTrigger>
                         <TabsTrigger value="technical" className="text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0">Technical</TabsTrigger>

@@ -36,6 +36,10 @@ export const supabase = (() => {
   return supabaseInstance
 })()
 
+/** Same values as `createClient` above — used by `api.ts`, `activityApi.ts`, `edgeFunctions.ts`. */
+export const SUPABASE_REST_ORIGIN = resolvedUrl
+export const SUPABASE_ANON_KEY_PUBLIC = resolvedKey
+
 // Database types for TypeScript
 export interface Database {
   public: {

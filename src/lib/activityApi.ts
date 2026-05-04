@@ -1,8 +1,8 @@
 import axios from "axios";
-import { supabase } from './supabase';
+import { supabase, SUPABASE_REST_ORIGIN, SUPABASE_ANON_KEY_PUBLIC } from './supabase';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = SUPABASE_REST_ORIGIN;
+const SUPABASE_ANON_KEY = SUPABASE_ANON_KEY_PUBLIC;
 
 // Create axios instance for Supabase
 const api = axios.create({
