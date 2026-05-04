@@ -2705,7 +2705,7 @@ Note: Please download the Recommendation Letter template using the link above, f
 
         {/* Main Tab Navigation */}
         <div className="mt-6">
-          <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden scrollbar-x-visible">
+          <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden">
             <nav className="-mb-px flex space-x-8 min-w-max flex-nowrap px-1">
               <button
                 onClick={() => {
@@ -2892,7 +2892,7 @@ Note: Please download the Recommendation Letter template using the link above, f
 
               {/* Clean Tab System */}
               <div className="mb-6">
-                <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden xl:overflow-x-visible scrollbar-x-visible scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden xl:overflow-x-visible scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   <nav className="-mb-px flex min-w-max space-x-6 sm:space-x-8 px-3 sm:px-0 whitespace-nowrap pb-0.5">
                     <button
                       onClick={() => setActiveTab('all')}
